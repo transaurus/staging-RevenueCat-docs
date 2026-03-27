@@ -1,0 +1,10 @@
+{
+  "sourceUrl": "https://github.com/RevenueCat/docs",
+  "branch": "main",
+  "docusaurusRoot": ".",
+  "configFile": "docusaurus.config.js",
+  "translateCommand": "yarn write-translations",
+  "buildCommand": "yarn build",
+  "buildOutput": "build",
+  "packageManager": "yarn"
+}
