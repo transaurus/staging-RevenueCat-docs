@@ -14,14 +14,6 @@ jobs:
         with:
           ref: 'main'
 
-      - name: 'Setup Node.js'
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: 'Enable Corepack'
-        run: corepack enable
-
       - name: 'Read meta.json'
         id: meta
         run: |
@@ -34,7 +26,16 @@ jobs:
           echo "buildCommand=$(jq -r '.buildCommand // "npx docusaurus build"' .github/scripts/meta.json)" >> $GITHUB_OUTPUT
           echo "buildOutput=$(jq -r '.buildOutput // "build"' .github/scripts/meta.json)" >> $GITHUB_OUTPUT
           echo "packageManager=$(jq -r '.packageManager // "npm"' .github/scripts/meta.json)" >> $GITHUB_OUTPUT
+          echo "nodeVersion=$(jq -r '.nodeVersion // "22"' .github/scripts/meta.json)" >> $GITHUB_OUTPUT
           cat .github/scripts/meta.json
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.meta.outputs.nodeVersion }}
+
+      - name: 'Enable Corepack'
+        run: corepack enable
 
       - name: 'Run prepare.sh (clone, install, prereqs, apply fixes)'
         run: |
@@ -57,13 +58,22 @@ jobs:
 
       - name: 'Run write-translations'
         run: |
-          cd "source-repo/${{ steps.meta.outputs.docusaurusRoot }}"
+          DOC_ROOT="source-repo/${{ steps.meta.outputs.docusaurusRoot }}"
+          # Source env vars from prepare.sh if it wrote a .build-env file
+          for envfile in "source-repo/.build-env" "$DOC_ROOT/.build-env"; do
+            [ -f "$envfile" ] && echo "Sourcing $envfile" && source "$envfile"
+          done
+          cd "$DOC_ROOT"
           echo "Running: ${{ steps.meta.outputs.translateCommand }}"
           ${{ steps.meta.outputs.translateCommand }}
 
       - name: 'Run build'
         run: |
-          cd "source-repo/${{ steps.meta.outputs.docusaurusRoot }}"
+          DOC_ROOT="source-repo/${{ steps.meta.outputs.docusaurusRoot }}"
+          for envfile in "source-repo/.build-env" "$DOC_ROOT/.build-env"; do
+            [ -f "$envfile" ] && echo "Sourcing $envfile" && source "$envfile"
+          done
+          cd "$DOC_ROOT"
           echo "Running: ${{ steps.meta.outputs.buildCommand }}"
           ${{ steps.meta.outputs.buildCommand }}
 
